@@ -25,3 +25,5 @@ class Chunk(BaseModel):
     document_id: str = Field(description="Identificador del documento de origen.")
     chunk_index: int = Field(description="Posición del chunk dentro del documento.")
     text: str = Field(description="Texto del chunk.")
+    source: str = Field(description="Identificador de la fuente/proveedor del documento de origen.")
+    uri: str = Field(description="Ubicación exacta del recurso original del documento de origen.")

@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from neurograph.models.document import Chunk, Document
+from neurograph.retrieval.chunking import chunk_document
 from neurograph.retrieval.vector_store import LocalVectorStore
 
 
@@ -17,9 +18,22 @@ def make_document(doc_id: str, metadata: dict | None = None) -> Document:
     )
 
 
-def make_chunks(doc_id: str, texts: list[str]) -> list[Chunk]:
+def make_chunks(
+    doc_id: str,
+    texts: list[str],
+    source: str = "test-source",
+    uri: str | None = None,
+) -> list[Chunk]:
+    resolved_uri = uri if uri is not None else f"file:///{doc_id}"
     return [
-        Chunk(id=f"{doc_id}::chunk::{i}", document_id=doc_id, chunk_index=i, text=text)
+        Chunk(
+            id=f"{doc_id}::chunk::{i}",
+            document_id=doc_id,
+            chunk_index=i,
+            text=text,
+            source=source,
+            uri=resolved_uri,
+        )
         for i, text in enumerate(texts)
     ]
 
@@ -58,8 +72,22 @@ def test_update_removes_stale_chunks_keeps_new_ones(store: LocalVectorStore) -> 
     store.upsert_document(doc, v1_chunks)
 
     v2_chunks = [
-        Chunk(id="doc-c::chunk::0", document_id="doc-c", chunk_index=0, text="v2 a"),
-        Chunk(id="doc-c::chunk::new", document_id="doc-c", chunk_index=1, text="v2 nuevo"),
+        Chunk(
+            id="doc-c::chunk::0",
+            document_id="doc-c",
+            chunk_index=0,
+            text="v2 a",
+            source="test-source",
+            uri="file:///doc-c",
+        ),
+        Chunk(
+            id="doc-c::chunk::new",
+            document_id="doc-c",
+            chunk_index=1,
+            text="v2 nuevo",
+            source="test-source",
+            uri="file:///doc-c",
+        ),
     ]
     store.upsert_document(doc, v2_chunks)
 
@@ -158,6 +186,25 @@ def test_upsert_does_not_mutate_inputs(store: LocalVectorStore) -> None:
     assert doc == doc_copy
     assert chunks == chunks_copy
     assert doc.metadata == metadata_copy
+
+
+def test_ingested_metadata_preserves_document_provenance(store: LocalVectorStore) -> None:
+    doc = Document(
+        id="doc-provenance",
+        source="obsidian-vault",
+        uri="file:///vault/notes/provenance.md",
+        content="Contenido de prueba para verificar la cadena Document -> Chunk -> LocalVectorStore -> ChromaDB.",
+        metadata={},
+    )
+    chunks = chunk_document(doc, target_size=1000)
+
+    store.upsert_document(doc, chunks)
+
+    result = store._collection.get(where={"document_id": "doc-provenance"}, include=["metadatas"])
+    assert len(result["metadatas"]) == len(chunks) > 0
+    for meta in result["metadatas"]:
+        assert meta["source"] == "obsidian-vault"
+        assert meta["uri"] == "file:///vault/notes/provenance.md"
 
 
 def test_isolation_between_documents(store: LocalVectorStore) -> None:

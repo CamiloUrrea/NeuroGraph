@@ -26,14 +26,35 @@ def seeded_index(tmp_path_factory):
 
     doc1 = make_document("doc-1", source="wiki")
     chunks1 = [
-        Chunk(id="doc-1::0", document_id="doc-1", chunk_index=0, text="El gato duerme en el sofa."),
-        Chunk(id="doc-1::1", document_id="doc-1", chunk_index=1, text="Los perros ladran en el parque."),
+        Chunk(
+            id="doc-1::0",
+            document_id="doc-1",
+            chunk_index=0,
+            text="El gato duerme en el sofa.",
+            source=doc1.source,
+            uri=doc1.uri,
+        ),
+        Chunk(
+            id="doc-1::1",
+            document_id="doc-1",
+            chunk_index=1,
+            text="Los perros ladran en el parque.",
+            source=doc1.source,
+            uri=doc1.uri,
+        ),
     ]
     store.upsert_document(doc1, chunks1)
 
     doc2 = make_document("doc-2", source="notes")
     chunks2 = [
-        Chunk(id="doc-2::0", document_id="doc-2", chunk_index=0, text="Python es un lenguaje de programacion."),
+        Chunk(
+            id="doc-2::0",
+            document_id="doc-2",
+            chunk_index=0,
+            text="Python es un lenguaje de programacion.",
+            source=doc2.source,
+            uri=doc2.uri,
+        ),
     ]
     store.upsert_document(doc2, chunks2)
 
@@ -71,6 +92,21 @@ def test_reconstructed_text_matches_stored_chunk(seeded_index) -> None:
         assert chunk.text == all_chunks_by_id[chunk.id].text
         assert chunk.document_id == all_chunks_by_id[chunk.id].document_id
         assert chunk.chunk_index == all_chunks_by_id[chunk.id].chunk_index
+
+
+def test_search_result_preserves_source_and_uri(seeded_index) -> None:
+    searcher, _ = seeded_index
+
+    results = searcher.search(
+        "gato perro animales",
+        top_k=5,
+        filters=SearchFilters(document_id="doc-1"),
+    )
+
+    assert len(results) > 0
+    for chunk, _ in results:
+        assert chunk.source == "wiki"
+        assert chunk.uri == "file:///doc-1"
 
 
 def test_results_preserve_relevance_order(seeded_index) -> None:

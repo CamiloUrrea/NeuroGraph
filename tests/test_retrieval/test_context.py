@@ -5,7 +5,14 @@ from neurograph.retrieval.context import select_context
 
 
 def make_chunk(chunk_id: str, text: str, chunk_index: int = 0, document_id: str = "doc-1") -> Chunk:
-    return Chunk(id=chunk_id, document_id=document_id, chunk_index=chunk_index, text=text)
+    return Chunk(
+        id=chunk_id,
+        document_id=document_id,
+        chunk_index=chunk_index,
+        text=text,
+        source="test-source",
+        uri=f"file:///{document_id}",
+    )
 
 
 def test_normal_selection_returns_all_chunks_within_budget_and_threshold() -> None:

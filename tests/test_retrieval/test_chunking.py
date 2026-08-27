@@ -213,6 +213,19 @@ def test_target_size_boundary_exact_and_off_by_one() -> None:
     assert all(len(chunk.text) <= 100 for chunk in chunks_over)
 
 
+def test_chunks_preserve_document_provenance() -> None:
+    content = "Paragraph one.\n\nParagraph two.\n\nParagraph three with extra content to split."
+    doc = _make_document(content, doc_id="provenance-doc")
+
+    chunks = chunk_document(doc, target_size=20)
+
+    assert len(chunks) > 1
+    for chunk in chunks:
+        assert chunk.source == doc.source
+        assert chunk.uri == doc.uri
+    assert "".join(chunk.text for chunk in chunks) == doc.content
+
+
 def test_chunking_does_not_mutate_document() -> None:
     content = "Paragraph one.\n\nParagraph two."
     doc = _make_document(content)

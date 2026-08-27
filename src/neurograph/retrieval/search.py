@@ -49,6 +49,8 @@ class SemanticSearch:
                     document_id=metadata["document_id"],
                     chunk_index=metadata["chunk_index"],
                     text=text,
+                    source=metadata["source"],
+                    uri=metadata["uri"],
                 ),
                 distance,
             )

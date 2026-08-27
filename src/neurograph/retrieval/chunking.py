@@ -26,6 +26,8 @@ def chunk_document(doc: Document, target_size: int = 1000) -> list[Chunk]:
             document_id=doc.id,
             chunk_index=index,
             text=text,
+            source=doc.source,
+            uri=doc.uri,
         )
         for index, text in enumerate(chunk_texts)
     ]
