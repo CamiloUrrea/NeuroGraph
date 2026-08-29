@@ -12,6 +12,8 @@ dependencies = [
     "PyYAML",
     "fastembed",
     "chromadb",
+    "fastapi",
+    "uvicorn",
 ]
 
 [project.optional-dependencies]
